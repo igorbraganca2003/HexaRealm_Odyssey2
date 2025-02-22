@@ -12,50 +12,53 @@ class GameScene: SKScene {
     
     var hexagonsBackground = HexagonsBackground()
     var cameraNode = SKCameraNode()
+    var lastCameraPosition: CGPoint?
+    var panJustHappened = false
+    var didPanCamera = false
     
-    // Propriedades para configurar zoom
-    var initialZoom: CGFloat = 1.0
-    var minZoom: CGFloat = 0.5
-    var maxZoom: CGFloat = 5.0
-    
-    // Tamanho do hexágono e quantidade de colunas/linhas
+    var initialZoom: CGFloat = 0.4
+    var minZoom: CGFloat = 0.4
+    var maxZoom: CGFloat = 1.2
     var hexagonSize: CGFloat = 20.0
-    var columns: Int = 100
-    var rows: Int = 100
     
     override func didMove(to view: SKView) {
         addChild(hexagonsBackground)
         
-        cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
         addChild(cameraNode)
         camera = cameraNode
         
-        // Criar os hexágonos com base nas novas propriedades
-        hexagonsBackground.createHexagons(columns: columns, rows: rows, size: hexagonSize)
-        hexagonsBackground.paintInitialHexagons()
+        hexagonsBackground.createHexagons(radius: 50, size: hexagonSize)
         
-        // Definir o zoom inicial
         cameraNode.setScale(initialZoom)
+        
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        panGesture.minimumNumberOfTouches = 2
+        view.addGestureRecognizer(panGesture)
     }
     
     func updateCameraZoom() {
-        let baseScale: CGFloat = initialZoom
-        let zoomFactor: CGFloat = 0.0009
-        
         let paintedCount = hexagonsBackground.paintedHexagonsCount()
-        var newScale = max(minZoom, baseScale + (CGFloat(paintedCount) * zoomFactor))
+        let zoomDecreaseFactor: CGFloat = 0.007
         
-        newScale = min(max(newScale, minZoom), maxZoom)
+        var newScale = initialZoom + (CGFloat(paintedCount) * zoomDecreaseFactor)
+        
+        newScale = max(minZoom, min(newScale, maxZoom))
         
         let zoomAction = SKAction.scale(to: newScale, duration: 0.3)
+        
         cameraNode.run(zoomAction)
         
-        // Atualizar a espessura do rastro para manter a visibilidade correta
         hexagonsBackground.updateTrailWidth(forZoom: newScale)
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
+        
+        if didPanCamera {
+            print("Toque ignorado porque um pan acabou de acontecer.")
+            return
+        }
+        
         let location = touch.location(in: self)
         
         hexagonsBackground.handleTouch(at: location)
@@ -73,4 +76,34 @@ class GameScene: SKScene {
         hexagonsBackground.finalizeDrawing()
         hexagonsBackground.removeTrail()
     }
+    
+    @objc func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {
+        guard let view = view else { return }
+        
+        let translation = recognizer.translation(in: view)
+        
+        if recognizer.state == .began {
+            lastCameraPosition = cameraNode.position
+            didPanCamera = true
+        } else if recognizer.state == .changed, let lastPosition = lastCameraPosition {
+            let newPosition = CGPoint(
+                x: lastPosition.x - translation.x,
+                y: lastPosition.y + translation.y
+            )
+            cameraNode.position = newPosition
+        }
+        
+        if recognizer.state == .ended || recognizer.state == .cancelled {
+            DispatchQueue.main.async {
+                self.didPanCamera = false
+                self.notifyTouchesEnded()
+            }
+        }
+    }
+
+    func notifyTouchesEnded() {
+        touchesEnded(Set<UITouch>(), with: nil)
+    }
+
+    
 }

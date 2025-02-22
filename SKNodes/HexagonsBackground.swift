@@ -6,13 +6,62 @@
 //
 
 import SpriteKit
+import CoreGraphics
+
 
 class HexagonsBackground: SKNode {
     
-    var hexagons: [SKShapeNode] = []
     var trailPath: CGMutablePath = CGMutablePath()
     var trailNode: SKShapeNode?
-    var paintedHexagons = 5
+    var paintedHexagons = 0
+    
+    var hexagons: [CGPoint: SKShapeNode] = [:]
+    var hexagonSize: CGFloat = 20.0
+    
+    func createHexagonalGrid(radius: Int, size: CGFloat) {
+        for q in -radius...radius {
+            for r in max(-radius, -q - radius)...min(radius, -q + radius) {
+                let x = CGFloat(q) * size * 1.5
+                let y = CGFloat(r) * size * sqrt(3) + (CGFloat(q) * size * sqrt(3) / 2 )
+                
+                let hexagon = SKShapeNode(path: createHexagonPath(size: size))
+                hexagon.position = CGPoint(x: x, y: y)
+                hexagon.strokeColor = .black
+                hexagon.fillColor = .clear
+                addChild(hexagon)
+            }
+        }
+    }
+    
+    func createHexagons(radius: Int, size: CGFloat) {
+        for q in -radius...radius {
+            for r in max(-radius, -q - radius)...min(radius, -q + radius) {
+                let x = CGFloat(q) * size * 1.5
+                let y = CGFloat(r) * size * sqrt(3) + (CGFloat(q) * size * sqrt(3) / 2)
+                
+                let hexagon = createHexagon(size: size)
+                hexagon.position = CGPoint(x: x, y: y)
+                hexagon.name = "hexagon"
+                addChild(hexagon)
+                hexagons[hexagon.position] = hexagon
+            }
+        }
+    }
+    
+    func createHexagonPath(size: CGFloat) -> CGPath {
+        let path = UIBezierPath()
+        for i in 0..<6 {
+            let angle = CGFloat(i) * (.pi / 3)
+            let point = CGPoint(x: cos(angle) * size, y: sin(angle) * size)
+            if i == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        path.close()
+        return path.cgPath
+    }
     
     func createHexagon(size: CGFloat) -> SKShapeNode {
         let path = UIBezierPath()
@@ -41,20 +90,20 @@ class HexagonsBackground: SKNode {
         
         for row in 0..<rows {
             for col in 0..<columns {
-                let hexagon = createHexagon(size: size)
-                
                 let x = CGFloat(col) * 1.5 * size
                 let y = CGFloat(row) * height
                 
+                var hexPosition = CGPoint(x: x, y: y)
+                
                 if col % 2 != 0 {
-                    hexagon.position = CGPoint(x: x, y: y - (height / 2))
-                } else {
-                    hexagon.position = CGPoint(x: x, y: y)
+                    hexPosition.y -= height / 2
                 }
                 
+                let hexagon = createHexagon(size: size)
+                hexagon.position = hexPosition
                 hexagon.name = "hexagon"
                 addChild(hexagon)
-                hexagons.append(hexagon)
+                hexagons[hexPosition] = hexagon
             }
         }
     }
@@ -105,15 +154,13 @@ class HexagonsBackground: SKNode {
         
         trailNode?.path = trailPath
         
-        // Ajustar a espessura do rastro conforme o zoom
         if let gameScene = scene as? GameScene {
             updateTrailWidth(forZoom: gameScene.cameraNode.xScale)
         }
     }
     
-    
     func paintHexagonsInsideTrail() {
-        for hexagon in hexagons {
+        for (_, hexagon) in hexagons {
             if trailPath.contains(hexagon.position) {
                 paintHexagon(hexagon)
             }
@@ -129,19 +176,22 @@ class HexagonsBackground: SKNode {
         trailNode?.removeFromParent()
         trailNode = nil
     }
+}
+
+extension CGPoint: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(x)
+        hasher.combine(y)
+    }
     
-    func paintInitialHexagons() {
-        guard hexagons.count > 0 else { return }
-        
-        let centerIndex = hexagons.count / 2
-        
-        let initialHexagons = [
-            centerIndex,
-            max(centerIndex - 1, 0)
-        ]
-        
-        for index in initialHexagons {
-            paintHexagon(hexagons[index])
-        }
+    public static func == (lhs: CGPoint, rhs: CGPoint) -> Bool {
+        return lhs.x == rhs.x && lhs.y == rhs.y
+    }
+    
+    func distance(to point: CGPoint) -> CGFloat {
+        let dx = self.x - point.x
+        let dy = self.y - point.y
+        return sqrt(dx * dx + dy * dy)
     }
 }
+
