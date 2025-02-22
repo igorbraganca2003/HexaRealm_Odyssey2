@@ -12,6 +12,7 @@ class HexagonsGrid: SKNode {
     var trailPath: CGMutablePath = CGMutablePath()
     var trailNode: SKShapeNode?
     var paintedHexagons = 0
+    var totalHexagons = 0
     
     var hexagons: [CGPoint: SKShapeNode] = [:]
     var hexagonSize: CGFloat = 20.0
@@ -37,24 +38,25 @@ class HexagonsGrid: SKNode {
         var maxX: CGFloat = -.greatestFiniteMagnitude
         var minY: CGFloat = .greatestFiniteMagnitude
         var maxY: CGFloat = -.greatestFiniteMagnitude
-        
+
         for q in -radius...radius {
             for r in max(-radius, -q - radius)...min(radius, -q + radius) {
                 let x = CGFloat(q) * size * 1.5
                 let y = CGFloat(r) * size * sqrt(3) + (CGFloat(q) * size * sqrt(3) / 2)
-                
+
                 minX = min(minX, x)
                 maxX = max(maxX, x)
                 minY = min(minY, y)
                 maxY = max(maxY, y)
-                
+
                 let hexagon = createHexagon(size: size)
                 hexagon.position = CGPoint(x: x, y: y)
                 addChild(hexagon)
                 hexagons[hexagon.position] = hexagon
+                totalHexagons += 1 
             }
         }
-        
+
         let padding: CGFloat = 50
         hexagonBounds = CGRect(x: minX - padding, y: minY - padding,
                                width: (maxX - minX) + 2 * padding,

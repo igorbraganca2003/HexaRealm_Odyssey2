@@ -28,14 +28,14 @@ class GameScene: SKScene {
         addChild(cameraNode)
         camera = cameraNode
         
-        hexagonsBackground.createHexagons(radius: 50, size: hexagonSize)
+        hexagonsBackground.createHexagons(radius: 1, size: hexagonSize)
         
         progressBar.setUpBar(scene: self)
-        cameraNode.addChild(progressBar) // Adiciona a progressBar à câmera
+        cameraNode.addChild(progressBar) 
         
         cameraNode.setScale(initialZoom)
         
-        positionProgressBar() // Define a posição fixa
+        positionProgressBar()
         
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         panGesture.minimumNumberOfTouches = 2
@@ -54,7 +54,7 @@ class GameScene: SKScene {
     
     func updateCameraZoom() {
         let paintedCount = hexagonsBackground.paintedHexagonsCount()
-        let zoomDecreaseFactor: CGFloat = 0.007
+        let zoomDecreaseFactor: CGFloat = 0.005
         
         var newScale = initialZoom + (CGFloat(paintedCount) * zoomDecreaseFactor)
         
@@ -91,6 +91,16 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         hexagonsBackground.finalizeDrawing()
         hexagonsBackground.removeTrail()
+
+        // Calcular a porcentagem de hexágonos pintados
+        let paintedCount = hexagonsBackground.paintedHexagons
+        let totalHexagons = hexagonsBackground.totalHexagons
+        let filledPercentage = CGFloat(paintedCount) / CGFloat(totalHexagons)
+
+        print("Painted: \(paintedCount), Total: \(totalHexagons), Percentage: \(filledPercentage)") // Depuração
+
+        // Atualizar a barra de progresso
+        progressBar.updateProgressBar(filledPercentage: filledPercentage)
     }
     
     @objc func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {
