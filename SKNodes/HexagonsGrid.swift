@@ -6,10 +6,8 @@
 //
 
 import SpriteKit
-import CoreGraphics
 
-
-class HexagonsBackground: SKNode {
+class HexagonsGrid: SKNode {
     
     var trailPath: CGMutablePath = CGMutablePath()
     var trailNode: SKShapeNode?
@@ -17,6 +15,7 @@ class HexagonsBackground: SKNode {
     
     var hexagons: [CGPoint: SKShapeNode] = [:]
     var hexagonSize: CGFloat = 20.0
+    var hexagonBounds: CGRect = .zero
     
     func createHexagonalGrid(radius: Int, size: CGFloat) {
         for q in -radius...radius {
@@ -34,18 +33,32 @@ class HexagonsBackground: SKNode {
     }
     
     func createHexagons(radius: Int, size: CGFloat) {
+        var minX: CGFloat = .greatestFiniteMagnitude
+        var maxX: CGFloat = -.greatestFiniteMagnitude
+        var minY: CGFloat = .greatestFiniteMagnitude
+        var maxY: CGFloat = -.greatestFiniteMagnitude
+        
         for q in -radius...radius {
             for r in max(-radius, -q - radius)...min(radius, -q + radius) {
                 let x = CGFloat(q) * size * 1.5
                 let y = CGFloat(r) * size * sqrt(3) + (CGFloat(q) * size * sqrt(3) / 2)
                 
+                minX = min(minX, x)
+                maxX = max(maxX, x)
+                minY = min(minY, y)
+                maxY = max(maxY, y)
+                
                 let hexagon = createHexagon(size: size)
                 hexagon.position = CGPoint(x: x, y: y)
-                hexagon.name = "hexagon"
                 addChild(hexagon)
                 hexagons[hexagon.position] = hexagon
             }
         }
+        
+        let padding: CGFloat = 50
+        hexagonBounds = CGRect(x: minX - padding, y: minY - padding,
+                               width: (maxX - minX) + 2 * padding,
+                               height: (maxY - minY) + 2 * padding)
     }
     
     func createHexagonPath(size: CGFloat) -> CGPath {

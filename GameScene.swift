@@ -10,7 +10,9 @@ import SwiftUI
 
 class GameScene: SKScene {
     
-    var hexagonsBackground = HexagonsBackground()
+    var hexagonsBackground = HexagonsGrid()
+    var progressBar = ProgressBar()
+        
     var cameraNode = SKCameraNode()
     var lastCameraPosition: CGPoint?
     var panJustHappened = false
@@ -23,17 +25,31 @@ class GameScene: SKScene {
     
     override func didMove(to view: SKView) {
         addChild(hexagonsBackground)
-        
         addChild(cameraNode)
         camera = cameraNode
         
         hexagonsBackground.createHexagons(radius: 50, size: hexagonSize)
         
+        progressBar.setUpBar(scene: self)
+        cameraNode.addChild(progressBar) // Adiciona a progressBar à câmera
+        
         cameraNode.setScale(initialZoom)
+        
+        positionProgressBar() // Define a posição fixa
         
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         panGesture.minimumNumberOfTouches = 2
         view.addGestureRecognizer(panGesture)
+    }
+    
+    func positionProgressBar() {
+        guard let scene = scene else { return }
+        let offsetY: CGFloat = 50 // Distância da parte inferior
+        
+        progressBar.position = CGPoint(
+            x: 0,
+            y: -scene.size.height / 2 + offsetY
+        )
     }
     
     func updateCameraZoom() {
@@ -90,7 +106,12 @@ class GameScene: SKScene {
                 x: lastPosition.x - translation.x,
                 y: lastPosition.y + translation.y
             )
-            cameraNode.position = newPosition
+            
+            if let hexBounds = hexagonsBackground.hexagonBounds ?? nil {
+                cameraNode.position = clampCameraPosition(newPosition, within: hexBounds)
+            } else {
+                cameraNode.position = newPosition
+            }
         }
         
         if recognizer.state == .ended || recognizer.state == .cancelled {
@@ -101,9 +122,22 @@ class GameScene: SKScene {
         }
     }
 
+    func clampCameraPosition(_ position: CGPoint, within bounds: CGRect) -> CGPoint {
+        let cameraHalfWidth = (size.width / 2) / cameraNode.xScale
+        let cameraHalfHeight = (size.height / 2) / cameraNode.yScale
+        
+        let minX = bounds.minX + cameraHalfWidth
+        let maxX = bounds.maxX - cameraHalfWidth
+        let minY = bounds.minY + cameraHalfHeight
+        let maxY = bounds.maxY - cameraHalfHeight
+        
+        let clampedX = max(minX, min(position.x, maxX))
+        let clampedY = max(minY, min(position.y, maxY))
+        
+        return CGPoint(x: clampedX, y: clampedY)
+    }
+
     func notifyTouchesEnded() {
         touchesEnded(Set<UITouch>(), with: nil)
     }
-
-    
 }
