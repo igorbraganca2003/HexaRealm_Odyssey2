@@ -13,6 +13,8 @@ class BotController: SKNode {
     var botNodes: [(node: SKShapeNode, color: UIColor)] = []
     var botTimers: [Timer] = []
     
+    var progressBar: ProgressBar?
+    
     func createBot(hexGrid: HexagonsGrid) {
         hex = hexGrid
         
@@ -31,7 +33,6 @@ class BotController: SKNode {
                 
                 let fixedSpeed: TimeInterval = 1.2
                 startBotExpansion(botIndex: index, speed: fixedSpeed)
-
             }
         }
     }
@@ -67,6 +68,8 @@ class BotController: SKNode {
         let bot = botNodes[botIndex]
 
         let botHexagons = hexGrid.hexagons.values.filter { $0.fillColor == bot.color }
+        
+        // Verifica se o bot ainda tem hexágonos para expandir
         if botHexagons.isEmpty {
             eliminateBot(botIndex: botIndex)
             return
@@ -91,8 +94,29 @@ class BotController: SKNode {
         for hex in newHexagons {
             paintHexagon(hex, color: bot.color)
         }
+        
+        // Atualiza os indicadores de bots na progress bar após a expansão
+//        if let gameScene = scene as? GameScene {
+//            gameScene.updateBotProgress()
+//        }
+        
+        // Verifica se o bot foi completamente cercado pelo jogador ou outro bot
+        if isBotEliminated(botIndex: botIndex) {
+            eliminateBot(botIndex: botIndex)
+        }
     }
-    
+
+    func isBotEliminated(botIndex: Int) -> Bool {
+        guard let hexGrid = hex else { return false }
+        
+        let bot = botNodes[botIndex]
+        
+        // Verifica se todos os hexágonos do bot foram pintados por outro bot ou o jogador
+        let botHexagons = hexGrid.hexagons.values.filter { $0.fillColor == bot.color }
+        
+        return botHexagons.isEmpty
+    }
+
     func eliminateBot(botIndex: Int) {
         guard botIndex < botNodes.count else { return }
         
