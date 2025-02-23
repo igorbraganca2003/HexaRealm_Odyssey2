@@ -16,14 +16,12 @@ class BotController: SKNode {
     func createBot(hexGrid: HexagonsGrid) {
         hex = hexGrid
         
-        // Posições iniciais para os bots
         let botPositions: [CGPoint] = [
-            CGPoint(x: 0, y: 0),      // Centro
-            CGPoint(x: 100, y: 100),  // Canto superior direito
-            CGPoint(x: -100, y: -100) // Canto inferior esquerdo
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 100, y: 100),
+            CGPoint(x: -100, y: -100)
         ]
         
-        // Cores únicas para cada bot
         let botColors: [UIColor] = [.green, .blue, .red]
         
         for (index, position) in botPositions.enumerated() {
@@ -31,8 +29,9 @@ class BotController: SKNode {
                 paintHexagon(nearestHexagon, color: botColors[index])
                 botNodes.append((node: nearestHexagon, color: botColors[index]))
                 
-                // Inicia a expansão do bot com um intervalo específico
-                startBotExpansion(botIndex: index, speed: 1.0 + Double(index) * 0.5)
+                let fixedSpeed: TimeInterval = 1.2
+                startBotExpansion(botIndex: index, speed: fixedSpeed)
+
             }
         }
     }
@@ -67,7 +66,6 @@ class BotController: SKNode {
 
         let bot = botNodes[botIndex]
 
-        // Se o bot não tem mais hexágonos, ele deve ser eliminado
         let botHexagons = hexGrid.hexagons.values.filter { $0.fillColor == bot.color }
         if botHexagons.isEmpty {
             eliminateBot(botIndex: botIndex)
@@ -78,13 +76,15 @@ class BotController: SKNode {
 
         var newHexagons: [SKShapeNode] = []
         
-        // Expansão: Encontra hexágonos vizinhos que podem ser pintados
         for hex in botHexagons {
-            for (position, neighborHex) in hexGrid.hexagons {
-                if (neighborHex.fillColor == .white || neighborHex.fillColor != bot.color) &&
-                    position.distance(to: hex.position) < hexGrid.hexagonSize * 2 {
-                    newHexagons.append(neighborHex)
-                }
+            let possibleNeighbors = hexGrid.hexagons.filter { (position, neighborHex) in
+                return (neighborHex.fillColor == .white || neighborHex.fillColor != bot.color) &&
+                       position.distance(to: hex.position) < hexGrid.hexagonSize * 2
+            }.map { $0.value }
+            
+            if !possibleNeighbors.isEmpty {
+                let randomHex = possibleNeighbors.randomElement()!
+                newHexagons.append(randomHex)
             }
         }
         
@@ -98,13 +98,11 @@ class BotController: SKNode {
         
         print("Bot \(botIndex) foi eliminado!")
 
-        // Para o timer do bot
         if botIndex < botTimers.count {
             botTimers[botIndex].invalidate()
             botTimers.remove(at: botIndex)
         }
 
-        // Remove o bot da lista
         botNodes.remove(at: botIndex)
     }
 }

@@ -23,7 +23,7 @@ class GameScene: SKScene {
     var minZoom: CGFloat = 0.4
     var maxZoom: CGFloat = 1.2
     var hexagonSize: CGFloat = 20.0
-    var hexGridSize: Int = 5
+    var hexGridSize: Int = 10
     
     override func didMove(to view: SKView) {
         addChild(hexagonsBackground)
