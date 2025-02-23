@@ -12,6 +12,7 @@ class GameScene: SKScene {
     
     var hexagonsBackground = HexagonsGrid()
     var progressBar = ProgressBar()
+    var botController = BotController()
         
     var cameraNode = SKCameraNode()
     var lastCameraPosition: CGPoint?
@@ -22,16 +23,23 @@ class GameScene: SKScene {
     var minZoom: CGFloat = 0.4
     var maxZoom: CGFloat = 1.2
     var hexagonSize: CGFloat = 20.0
+    var hexGridSize: Int = 5
     
     override func didMove(to view: SKView) {
         addChild(hexagonsBackground)
+        addChild(botController)
         addChild(cameraNode)
         camera = cameraNode
         
-        hexagonsBackground.createHexagons(radius: 1, size: hexagonSize)
+        hexagonsBackground.createHexagons(radius: hexGridSize, size: hexagonSize)
         
+        // Garante que o BotController não seja recriado desnecessariamente
+        if botController.botNodes.isEmpty {
+            botController.createBot(hexGrid: hexagonsBackground)
+        }
+
         progressBar.setUpBar(scene: self)
-        cameraNode.addChild(progressBar) 
+        cameraNode.addChild(progressBar)
         
         cameraNode.setScale(initialZoom)
         
@@ -41,10 +49,11 @@ class GameScene: SKScene {
         panGesture.minimumNumberOfTouches = 2
         view.addGestureRecognizer(panGesture)
     }
+
     
     func positionProgressBar() {
         guard let scene = scene else { return }
-        let offsetY: CGFloat = 50 // Distância da parte inferior
+        let offsetY: CGFloat = 50
         
         progressBar.position = CGPoint(
             x: 0,
@@ -92,15 +101,16 @@ class GameScene: SKScene {
         hexagonsBackground.finalizeDrawing()
         hexagonsBackground.removeTrail()
 
-        // Calcular a porcentagem de hexágonos pintados
         let paintedCount = hexagonsBackground.paintedHexagons
         let totalHexagons = hexagonsBackground.totalHexagons
         let filledPercentage = CGFloat(paintedCount) / CGFloat(totalHexagons)
 
-        print("Painted: \(paintedCount), Total: \(totalHexagons), Percentage: \(filledPercentage)") // Depuração
+//        botController.createBot(hexGrid: hexagonsBackground)
 
-        // Atualizar a barra de progresso
         progressBar.updateProgressBar(filledPercentage: filledPercentage)
+        
+        
+//        print("Painted: \(paintedCount), Total: \(totalHexagons), Percentage: \(filledPercentage)")
     }
     
     @objc func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {

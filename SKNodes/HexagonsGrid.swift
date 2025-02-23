@@ -17,6 +17,8 @@ class HexagonsGrid: SKNode {
     var hexagons: [CGPoint: SKShapeNode] = [:]
     var hexagonSize: CGFloat = 20.0
     var hexagonBounds: CGRect = .zero
+    var hexColor: UIColor = .yellow
+    var playerColor: UIColor = .orange
     
     func createHexagonalGrid(radius: Int, size: CGFloat) {
         for q in -radius...radius {
@@ -99,37 +101,13 @@ class HexagonsGrid: SKNode {
         return hexagon
     }
     
-    func createHexagons(columns: Int, rows: Int, size: CGFloat) {
-        let width = 2 * size
-        let height = sqrt(3) * size
-        
-        for row in 0..<rows {
-            for col in 0..<columns {
-                let x = CGFloat(col) * 1.5 * size
-                let y = CGFloat(row) * height
-                
-                var hexPosition = CGPoint(x: x, y: y)
-                
-                if col % 2 != 0 {
-                    hexPosition.y -= height / 2
-                }
-                
-                let hexagon = createHexagon(size: size)
-                hexagon.position = hexPosition
-                hexagon.name = "hexagon"
-                addChild(hexagon)
-                hexagons[hexPosition] = hexagon
-            }
-        }
-    }
-    
     func getHexagonAt(location: CGPoint) -> SKShapeNode? {
         return nodes(at: location).compactMap { $0 as? SKShapeNode }.first
     }
     
-    func paintHexagon(_ hexagon: SKShapeNode) {
-        if hexagon.fillColor != .orange {
-            hexagon.fillColor = .orange
+    func paintHexagon(_ hexagon: SKShapeNode, color: UIColor) {
+        if hexagon.fillColor != playerColor {
+            hexagon.fillColor = playerColor
             paintedHexagons += 1
             
             if let gameScene = scene as? GameScene {
@@ -144,7 +122,7 @@ class HexagonsGrid: SKNode {
     
     func handleTouch(at location: CGPoint) {
         if let hexagon = getHexagonAt(location: location) {
-            paintHexagon(hexagon)
+            paintHexagon(hexagon, color: hexColor)
         }
     }
     
@@ -177,7 +155,7 @@ class HexagonsGrid: SKNode {
     func paintHexagonsInsideTrail() {
         for (_, hexagon) in hexagons {
             if trailPath.contains(hexagon.position) {
-                paintHexagon(hexagon)
+                paintHexagon(hexagon, color: hexColor)
             }
         }
     }
@@ -209,4 +187,3 @@ extension CGPoint: Hashable {
         return sqrt(dx * dx + dy * dy)
     }
 }
-
